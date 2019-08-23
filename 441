@@ -1,0 +1,47 @@
+import numpy as np
+import pandas as pd
+pd.set_option('display.max.columns', 100)
+%matplotlib inline 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+data = pd.read_csv('adult.data.csv')
+print("\n".join(data.columns))
+data.shape
+data.head()
+data[' sex'].value_counts()
+data[data[' sex'] == ' Female']['age'].mean()
+print("{0} {1} ".format(
+    ((data[' native-country'] == ' Germany').sum() / 32561
+
+age = data[data[' salary'] == ' >50K']['age']
+ages = data[data[' salary'] == ' <=50K']['age']
+print("More than 50k: {0} +- {1} years old, less than 50k: {2} +- {3} years old.".format(
+    (age.mean()), (age.std()),
+    (ages.mean()), (ages.std())))
+    Boolean = []
+edu =data[data[' salary'] == ' >50K']
+if(((edu[' education'] != (' Bachelors')) & (edu[' education'] !=' Prof-school')&
+(edu[' education'] != (' Assoc-acdm')) & (edu[' education'] !='  Assoc-voc')&
+(edu[' education'] != (' Masters')) & (edu[' education'] !=' Doctorate')).sum()>0):
+    Boolean.append(False)
+else:
+    Boolean.append(True)
+    
+print(Boolean)
+for (race, sex), sub in data.groupby([' race', ' sex']):
+    print("Race: {0} Gender: {1}".format(race, sex))
+    print(sub['age'].describe())
+    print()
+    
+maxtime = data[' hours-per-week'].max()
+num = data[data[' hours-per-week'] == maxtime].shape[0]
+percent = float((data[(data[' hours-per-week'] == maxtime)& (data[' salary'] == ' >50K')].shape[0]) / num *100)
+
+print("Max time: {0} hours.".format(maxtime))
+print("People work such a number of hours: {0}".format(num))
+print("Percentage of those who earn a lot: {0} %".format(percent))
+for (country, salary), sub in data.groupby([' native-country', ' salary']):
+    if(country==' Japan'):
+        print(salary, country, (sub[' hours-per-week'].mean()))
