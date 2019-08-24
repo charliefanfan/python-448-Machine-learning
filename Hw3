@@ -1,0 +1,345 @@
+import numpy as np
+import random
+import collections
+import matplotlib.pyplot as plt
+
+def get_distance(X1, X2):
+    """ get distance between two points(high dimentonal)
+
+    Parameters
+    ----------
+    X1: array, shape(d)  a high dimentonal point
+    X2: array, shape(d)  another high dimentonal point
+
+    Returns
+    -------
+    distance: int
+        the distance between point X1 and X2
+    """
+    return np.sqrt(np.sum((X1-X2)**2))
+
+def get_closest_index(point, centers):
+    """ get the index of the point in centers which is closest to point in first parameter
+
+    Parameters
+    ----------
+    point: shape(d) a point
+    centers: all centers shape(k, d)
+
+    Returns
+    -------
+    index: int
+        the index of the point in centers which is closest to point in first parameter
+    """
+    return np.argmin([get_distance(point, center) for center in centers])
+
+def get_closest_dist(point, centers):
+    """ get the minimal distance of the point in centers to point in first parameter
+
+    Parameters
+    ----------
+    point: shape(d) a point
+    centers: all centers shape(k, d)
+
+    Returns
+    -------
+    distance: int
+        the minimal distance of the point in centers to point in first parameter
+    """
+    return np.min([get_distance(point, center) for center in centers])
+
+def k_init(X, k):
+    """ k-means++: initialization algorithm
+
+    Parameters
+    ----------
+    X: array, shape(n ,d)
+        Input array of n samples and d features
+
+    k: int
+        The number of clusters
+
+    Returns
+    -------
+    init_centers: array (k, d)
+        The initialize centers for kmeans++
+    """
+    n, d = np.shape(X)
+    centers = [random.choice(X)]
+    ZERO_EPS = 1e-5
+
+    for i in range(1, k):
+        total = 0.0
+        d = [0] * n
+        for i in range(n):
+            d[i] = get_closest_dist(X[i], centers)
+            total += d[i]
+        total *= random.random()
+        for i in range(n):
+            total -= d[i]
+            if total <= ZERO_EPS:
+                centers.append(X[i])
+                break
+    assert len(centers) == k
+    return centers
+
+
+def k_means_pp(X, k, max_iter):
+    """ k-means++ clustering algorithm
+
+    step 1: call k_init() to initialize the centers
+    step 2: iteratively refine the assignments
+
+    Parameters
+    ----------
+    X: array, shape(n ,d)
+        Input array of n samples and d features
+
+    k: int
+        The number of clusters
+
+    max_iter: int
+        Maximum number of iteration
+
+    Returns
+    -------
+    final_centers: array, shape (k, d)
+        The final cluster centers
+    """
+    n, d = np.shape(X)
+    centers = k_init(X, k)
+
+    for iter_index in range(max_iter):
+        center_dict = collections.defaultdict(list)
+        for point in X:
+            belongs = get_closest_index(point, centers)
+            center_dict[belongs].append(point)
+
+        new_centers = []
+        for i in range(k):
+            new_centers.append(np.mean(np.array(center_dict[i]), axis=0))
+        if np.array_equal(centers, new_centers):
+            break
+        centers = new_centers
+    return centers
+
+def assign_data2clusters(X, C):
+    """ Assignments of data to the clusters
+    Parameters
+    ----------
+    X: array, shape(n ,d)
+        Input array of n samples and d features
+
+    C: array, shape(k ,d)
+        The final cluster centers
+
+    Returns
+    -------
+    data_map: array, shape(n, k)
+        The binary matrix A which shows the assignments of data points (X) to
+        the input centers (C).
+    """
+
+    n, d = np.shape(X)
+    k, d = np.shape(C)
+    data_map = []
+    for point in X:
+        tmp_map = [0] * k
+        belonging_index = get_closest_index(point, C) 
+        tmp_map[belonging_index] = 1
+        data_map.append(tmp_map)
+    return data_map
+
+
+
+def data_to_centers_indexes(X, C):
+    """ Assignments of data to the clusters
+    Parameters
+    ----------
+    X: array, shape(n ,d)
+        Input array of n samples and d features
+
+    C: array, shape(k ,d)
+        The final cluster centers
+
+    Returns
+    -------
+    cneters_indexes: array, shape(n)
+    """
+
+    n, d = np.shape(X)
+    k, d = np.shape(C)
+    cneters_indexes = []
+    for point in X:
+        belonging_index = get_closest_index(point, C) 
+        cneters_indexes.append(belonging_index)
+    return cneters_indexes
+
+
+def compute_objective(X, C):
+    """ Compute the clustering objective(sum of squares distance) for X and C
+    Parameters
+    ----------
+    X: array, shape(n ,d)
+        Input array of n samples and d features
+
+    C: array, shape(k ,d)
+        The final cluster centers
+
+    Returns
+    -------
+    accuracy: float
+        The objective for the given assigments
+    """
+    accuracy = 0
+    for point in X:
+        accuracy += get_closest_dist(point, C)**2
+    return accuracy
+
+
+def load_iris_dataset():
+    """ load iris dataset from file
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    dataset: shape(n, d)
+        the iris dataset
+    """
+    dataset = []
+    with open('iris.data', 'r') as f:
+        for line in f:
+            if line == '\n':
+                break
+            dataset.append(list(map(float, line.split(',')[:4])))
+    return np.array(dataset)
+
+
+def get_ratio_dataset(iris_dataset):
+    """ turn iris dataset to ratio dataset
+
+    Parameters
+    ----------
+    iris_dataset: shape(n, d)
+
+    Returns
+    -------
+    ratio_dataset: shape(n, 2)
+        the ratio dataset got according to the requirement
+    """
+    ratio_dataset = []
+    for item in iris_dataset:
+        ratio_dataset.append([item[0] / item[1], item[2] / item[3]])
+    return np.array(ratio_dataset)
+
+
+def run_and_get_accuracy(k, max_iter, times=1):
+    """ run the kmeans++ algorithm and get accuracy
+
+    Parameters
+    ----------
+    k: the number of clusters
+    max_iter: times of iteration in kmeans
+    times: times of running the algorithm
+
+    Returns
+    -------
+    average_accuracy: float
+        the average accuracy of times running of the algorithm
+    """
+    iris_dataset = load_iris_dataset()
+    ratio_dataset = get_ratio_dataset(iris_dataset)
+
+    all_accuracy = []
+    for tries in range(times):
+        final_centers = k_means_pp(ratio_dataset, k, max_iter)
+        all_accuracy.append(compute_objective(ratio_dataset, final_centers))
+    return np.mean(all_accuracy) 
+
+def plot_accuracy_comparing_k(max_iter, times):
+    """ plot accuracy comparing_k
+
+    Parameters
+    ----------
+    max_iter: times of iteration in kmeans
+    times: times of running the algorithm
+    """
+
+    plot_data = []
+    for k in range(1, 5 + 1):
+        accuracy = run_and_get_accuracy(k, max_iter, times)
+        plot_data.append([k, accuracy])
+        print('k = {} objective = {} (average for running {} times)'.format(k, accuracy, times))
+
+    plot_data = np.array(plot_data)
+    plt.figure()
+    x, y = plot_data[:,0], plot_data[:,1]
+    plt.xticks(np.arange(min(x), max(x)+1, 1.0))
+    plt.xlabel("number of clusters(k)")
+    plt.ylabel("objective")
+    plt.title("accuracy comparing k")
+    plt.plot(x, y, 'bx-')
+    plt.show()
+
+
+
+def plot_accuracy_comparing_iter(k, max_iter):
+    """ plot accuracy comparing_k
+
+    Parameters
+    ----------
+    k: number of clusters
+    max_iter: times of iteration in kmeans
+    """
+
+    n, d = np.shape(ratio_dataset)
+    centers = k_init(ratio_dataset, k)
+
+    plot_data = []
+    for iter_index in range(max_iter):
+        objective = compute_objective(ratio_dataset, centers)
+        plot_data.append([iter_index, objective])
+        print('iter_index = {} objective = {}'.format(iter_index, objective))
+        center_dict = collections.defaultdict(list)
+        for point in ratio_dataset:
+            belongs = get_closest_index(point, centers)
+            center_dict[belongs].append(point)
+
+        new_centers = []
+        for i in range(k):
+            new_centers.append(np.mean(np.array(center_dict[i]), axis=0))
+        if np.array_equal(centers, new_centers):
+            break
+        centers = new_centers
+
+    plot_data = np.array(plot_data)
+    plt.figure()
+    x, y = plot_data[:,0], plot_data[:,1]
+    plt.xticks(np.arange(min(x), max(x)+1, 1.0))
+    plt.xlabel("number of iterations")
+    plt.ylabel("objective")
+    plt.title("accuracy comparing iterations")
+    plt.plot(x, y, 'bx-')
+    plt.show()
+
+
+def plot_clusters_and_centers():
+    plt.figure()
+    centers = np.array(k_means_pp(X=ratio_dataset, k=3, max_iter=100))
+    centers_indexes = data_to_centers_indexes(X=ratio_dataset, C=centers)
+    plt.scatter(ratio_dataset[:, 0], ratio_dataset[:, 1], c=centers_indexes, s=50, cmap='viridis')
+    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+    plt.show()
+    
+
+
+if __name__== "__main__":
+    iris_dataset = load_iris_dataset()
+    ratio_dataset = get_ratio_dataset(iris_dataset)
+
+    plot_accuracy_comparing_k(max_iter=100, times=50)
+    plot_accuracy_comparing_iter(k=3, max_iter=100)
+    plot_clusters_and_centers()
