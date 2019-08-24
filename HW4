@@ -1,0 +1,75 @@
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import Normalizer
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+def Question1():
+    data = [[1, 2], [-1, 1], [0, 1], [2, 4],[3,1]]
+
+    print("removal mean or centering")
+    mean = np.mean(data, axis = 0)
+    scale = np.std(data, axis = 0)
+    d = (data - mean)
+    print(d)
+    print("scaling[0,1]:")
+    MM = MinMaxScaler(copy=True, feature_range=(0, 1))
+    MM.fit(data)
+    print(MM.transform(data))
+    scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
+    scaler.fit(data)
+    print("standalize:")
+    print(scaler.transform(data))
+    print('normalize:')
+    tf = Normalizer().fit(data)
+    Normalizer(copy=True, norm='l2')
+    print(tf.transform(data))
+
+def Question2():
+    from sklearn.datasets import load_iris
+    from sklearn.decomposition import PCA
+    data = load_iris()
+    x_train = data.data
+    x_test = data.target
+    
+    from sklearn.model_selection import train_test_split
+    #x_train, x_test, y_train, y_test = train_test_split(X,Y,test_size = 0.2, random_state = 0)
+    sc = StandardScaler()
+    #x_train = sc.fit_transform(x_train)
+    #x_test = sc.transform(x_test)
+    
+    flower_name = data.target_names
+    mean = np.mean(x_train, axis = 0)
+    scale = np.std(x_train, axis = 0)
+    x_train = (x_train - mean) / scale
+    pca = PCA()
+    #x_train = pca.fit_transform(x_train)
+    #x_test = pca.transform(x_test)
+    #var = pca.explained_variance_ratio_
+    #print(var)
+
+    #pca = PCA(n_components=2)
+    x_r = pca.fit(x_train).transform(x_train)
+    colors = ['navy', 'turquoise', 'darkorange']
+    lw = 2
+
+    for color, i, target_name in zip(colors, [0, 1, 2], flower_name):
+        plt.scatter(x_r[x_test == i, 0], x_r[x_test == i, 1], color=color, alpha=.8, lw=lw,
+        label=target_name)
+    plt.legend(loc='best', shadow=False, scatterpoints=1)
+    plt.title('PCA of IRIS dataset')
+    plt.show()
+
+    from sklearn.cluster import KMeans
+    kmeans = KMeans(n_clusters=3, init='k-means++', max_iter=300, n_init=10, random_state=0)
+    y_kmeans = kmeans.fit_predict(x_train)
+    plt.scatter(x_train[y_kmeans == 0, 0], x_train[y_kmeans == 0, 1], s = 100, c = colors[0], label = 'Isetosa')
+    plt.scatter(x_train[y_kmeans == 1, 0], x_train[y_kmeans == 1, 1], s = 100, c = colors[1], label = 'versicolour')
+    plt.scatter(x_train[y_kmeans == 2, 0], x_train[y_kmeans == 2, 1], s = 100, c = colors[2], label = 'virginica')
+    plt.legend(loc='best', shadow=False, scatterpoints=1)
+    plt.title('KMEANS of IRIS dataset')
+    plt.show()
+Question1()
+Question2()
