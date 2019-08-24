@@ -10,6 +10,8 @@ data = pd.read_csv('adult.data.csv')
 print("\n".join(data.columns))
 data.shape
 data.head()
+
+#men and women (sex feature) are represented in this dataset
 data[' sex'].value_counts()
 data[data[' sex'] == ' Female']['age'].mean()
 print("{0} {1} ".format(
